@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: testnode-app
-          image: rajdurvasula/testnode-app:latest
+          image: rajdurvasula/testnode:tekton1
           ports:
             - containerPort: 8080
 ---

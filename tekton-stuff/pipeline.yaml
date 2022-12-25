@@ -1,0 +1,56 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: nodeapp-pipeline
+  namespace: rdapp
+spec:
+  params:
+    - name: REPO
+      type: string
+    - name: IMAGE_REF
+      type: string
+    - name: IMAGE_TAG
+      type: string
+  workspaces:
+    - name: linked-workspace
+    - name: git-basic-auth
+  tasks:
+    - name: fetch-repo
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: basic-auth
+          workspace: git-basic-auth
+        - name: output
+          workspace: linked-workspace
+      params:
+        - name: url
+          value: "$(params.REPO)"
+        - name: revision
+          value: main
+    - name: build-and-push
+      taskRef:
+        name: buildah
+      runAfter: [ 'fetch-repo' ]
+      workspaces:
+        - name: source
+          workspace: linked-workspace
+      params:
+        - name: IMAGE
+          value: "$(params.IMAGE_REF):$(params.IMAGE_TAG)"
+        - name: CONTEXT
+          value: ''
+        - name: FORMAT
+          value: docker
+    - name: test-deploy
+      taskRef:
+        name: kubernetes-actions
+      runAfter: [ 'build-and-push' ]
+      params:
+        - name: script
+          value: |
+            kubectl apply -f https://raw.githubusercontent.com/rajdurvasula/testnodedocker/main/manifest/deploy.yaml
+      workspaces:
+        - name: manifest-dir
+          workspace: linked-workspace
