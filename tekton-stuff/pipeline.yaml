@@ -15,6 +15,7 @@ spec:
   workspaces:
     - name: linked-workspace
     - name: git-basic-auth
+    - name: config-dir
   tasks:
     - name: fetch-repo
       taskRef:
@@ -48,9 +49,15 @@ spec:
         name: kubernetes-actions
       runAfter: [ 'build-and-push' ]
       params:
+        - name: image
+          value: public.ecr.aws/amazonlinux/amazonlinux:2.0.20221210.1-arm64v8
         - name: script
           value: |
+            curl --silent --location -o /usr/local/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.24.7/2022-10-31/bin/linux/amd64/kubectl
+            chmod +x /usr/local/bin/kubectl
             kubectl apply -f https://raw.githubusercontent.com/rajdurvasula/testnodedocker/main/manifest/deploy.yaml
       workspaces:
         - name: manifest-dir
           workspace: linked-workspace
+        - name: kubeconfig-dir
+          workspace: config-dir
